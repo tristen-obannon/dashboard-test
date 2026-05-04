@@ -1,5 +1,6 @@
 const CSV_FILES = [
   "memberships.csv",
+  "membership.xls.csv",
   "membership-data.csv",
   "test report.csv"
 ];
