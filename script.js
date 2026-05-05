@@ -5,6 +5,9 @@ const CSV_FILES = [
   "test report.csv"
 ];
 const SOURCE_COLUMN = "active_membership_plan_type_name";
+const SUBSCRIPTION_DATE_COLUMN = "active_membership_subscription_date";
+const START_YEAR = 1991;
+const END_YEAR = 2026;
 const DISPLAY_LABELS = {
   Active: "Annual",
   Lifetime: "Lifetime",
@@ -28,6 +31,7 @@ const COLUMN_LABELS = {
 
 let pieChart;
 let barChart;
+let yearChart;
 
 async function initDashboard() {
   try {
@@ -35,7 +39,7 @@ async function initDashboard() {
     processCsvText(csvText);
     hideError();
   } catch (error) {
-    showError("The published dataset could not be loaded.");
+    showError(error.message);
   }
 }
 
@@ -65,9 +69,10 @@ function processCsvText(csvText) {
     },
     { Active: 0, Lifetime: 0, Other: 0 }
   );
+  const yearlyCounts = getYearlySubscriptionCounts(enrichedRows);
 
   updateKpis(counts);
-  renderCharts(counts);
+  renderCharts(counts, yearlyCounts);
   renderTable(enrichedRows);
 }
 
@@ -85,12 +90,14 @@ function updateKpis(counts) {
   document.getElementById("lifetime-count").textContent = formatNumber(counts.Lifetime);
 }
 
-function renderCharts(counts) {
+function renderCharts(counts, yearlyCounts) {
   const pieCtx = document.getElementById("pieChart");
   const barCtx = document.getElementById("barChart");
+  const yearCtx = document.getElementById("yearChart");
 
   if (pieChart) pieChart.destroy();
   if (barChart) barChart.destroy();
+  if (yearChart) yearChart.destroy();
 
   pieChart = new Chart(pieCtx, {
     type: "pie",
@@ -139,6 +146,44 @@ function renderCharts(counts) {
     options: {
       maintainAspectRatio: false,
       scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            precision: 0
+          }
+        }
+      },
+      plugins: {
+        legend: {
+          display: false
+        }
+      }
+    }
+  });
+
+  yearChart = new Chart(yearCtx, {
+    type: "bar",
+    data: {
+      labels: yearlyCounts.map((item) => item.year),
+      datasets: [
+        {
+          label: "Subscriptions",
+          data: yearlyCounts.map((item) => item.count),
+          backgroundColor: "#1d4ed8",
+          borderRadius: 5,
+          maxBarThickness: 28
+        }
+      ]
+    },
+    options: {
+      maintainAspectRatio: false,
+      scales: {
+        x: {
+          ticks: {
+            maxRotation: 45,
+            minRotation: 45
+          }
+        },
         y: {
           beginAtZero: true,
           ticks: {
@@ -261,6 +306,31 @@ function formatNumber(value) {
   return new Intl.NumberFormat("en-US").format(value);
 }
 
+function getYearlySubscriptionCounts(rows) {
+  const countsByYear = {};
+
+  for (let year = START_YEAR; year <= END_YEAR; year += 1) {
+    countsByYear[year] = 0;
+  }
+
+  rows.forEach((row) => {
+    const year = getYearFromDate(row[SUBSCRIPTION_DATE_COLUMN]);
+    if (year >= START_YEAR && year <= END_YEAR) {
+      countsByYear[year] += 1;
+    }
+  });
+
+  return Object.entries(countsByYear).map(([year, count]) => ({
+    year,
+    count
+  }));
+}
+
+function getYearFromDate(value) {
+  const match = String(value ?? "").match(/\b(19|20)\d{2}\b/);
+  return match ? Number(match[0]) : null;
+}
+
 function getDisplayLabel(type) {
   return DISPLAY_LABELS[type] || type;
 }
@@ -290,8 +360,11 @@ function hideError() {
 }
 
 async function loadDefaultCsv() {
+  const attemptedFiles = [];
+
   for (const fileName of CSV_FILES) {
-    const response = await fetch(fileName);
+    attemptedFiles.push(fileName);
+    const response = await fetch(encodeURI(fileName));
     if (response.ok) {
       return {
         csvText: await response.text(),
@@ -299,6 +372,11 @@ async function loadDefaultCsv() {
       };
     }
   }
+
+  throw new Error(`The published dataset could not be loaded. Checked: ${attemptedFiles.join(", ")}.`);
+}
+
+initDashboard();
 
   throw new Error("No default CSV file was found.");
 }
