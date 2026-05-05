@@ -163,6 +163,14 @@ main {
   min-height: 320px;
 }
 
+.chart-wrap-wide {
+  min-height: 360px;
+}
+
+.trend-panel {
+  margin-top: 20px;
+}
+
 .table-panel {
   margin-top: 20px;
 }
