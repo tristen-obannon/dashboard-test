@@ -364,9 +364,7 @@ async function loadDefaultCsv() {
 
   for (const fileName of CSV_FILES) {
     attemptedFiles.push(fileName);
-    // Use raw GitHub URL for GitHub Pages
-    const baseUrl = "https://raw.githubusercontent.com/tristen-obannon/dashboard-test/main";
-    const response = await fetch(`${baseUrl}/${encodeURI(fileName)}`);
+    const response = await fetch(encodeURI(fileName));
     if (response.ok) {
       return {
         csvText: await response.text(),
