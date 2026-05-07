@@ -364,7 +364,9 @@ async function loadDefaultCsv() {
 
   for (const fileName of CSV_FILES) {
     attemptedFiles.push(fileName);
-    const response = await fetch(encodeURI(fileName));
+    // Use raw GitHub URL for GitHub Pages
+    const baseUrl = "https://raw.githubusercontent.com/tristen-obannon/dashboard-test/main";
+    const response = await fetch(`${baseUrl}/${encodeURI(fileName)}`);
     if (response.ok) {
       return {
         csvText: await response.text(),
@@ -374,11 +376,6 @@ async function loadDefaultCsv() {
   }
 
   throw new Error(`The published dataset could not be loaded. Checked: ${attemptedFiles.join(", ")}.`);
-}
-
-initDashboard();
-
-  throw new Error("No default CSV file was found.");
 }
 
 initDashboard();
