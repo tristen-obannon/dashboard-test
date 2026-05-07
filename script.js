@@ -1,6 +1,6 @@
 const CSV_FILES = [
-  "memberships.csv",
   "membership.xls.csv",
+  "memberships.csv",
   "membership-data.csv",
   "test report.csv"
 ];
@@ -364,7 +364,9 @@ async function loadDefaultCsv() {
 
   for (const fileName of CSV_FILES) {
     attemptedFiles.push(fileName);
-    const response = await fetch(encodeURI(fileName));
+    const response = await fetch(`${encodeURI(fileName)}?v=${Date.now()}`, {
+      cache: "no-store"
+    });
     if (response.ok) {
       return {
         csvText: await response.text(),
